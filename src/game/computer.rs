@@ -108,6 +108,8 @@ impl ComputerGame {
             })
             .collect::<Vec<_>>();
 
+        println!("Matching Moves: {}", moves.len());
+
         let (x, y) = moves.choose(&mut rand::thread_rng()).unwrap();
 
         (*x as isize, *y as isize)
@@ -142,7 +144,7 @@ impl ComputerGame {
                         }
                     }
                 }
-                for i in 1..=(game.get_win_length()) {
+                for i in 1..(game.get_win_length()) {
                     match game.get_tile(x + dx * i * d, y + dy * i * d) {
                         Ok(Some(player)) => {
                             if player.eq(&self.computer) {
