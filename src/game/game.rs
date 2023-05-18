@@ -2,10 +2,19 @@ pub type Board = Vec<Vec<Option<Player>>>;
 
 const DIRECTIONS: [(isize, isize); 4] = [(1, 0), (-1, 1), (0, 1), (1, 1)];
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Player {
     A,
     B,
+}
+
+impl ToString for Player {
+    fn to_string(&self) -> String {
+        match self {
+            Self::A => "A".to_string(),
+            Self::B => "B".to_string()
+        }
+    }
 }
 
 impl Player {
@@ -32,41 +41,27 @@ pub struct Game {
     current_turn: Player,
 }
 
-impl Game {
-    pub fn new(width: isize, height: isize, win_length: isize) -> Result<Self, NewGameError> {
-        if height < 0 {
-            return Err(NewGameError::InvalidHeight);
-        }
-        if width < 0 {
-            return Err(NewGameError::InvalidWidth);
-        }
-        if win_length > height || win_length > width {
-            return Err(NewGameError::InvalidWinLength);
-        }
+pub trait GameTrait {
+    fn get_current_player(&self) -> Player;
+    fn get_board(&self) -> Board;
+    fn play_move(&mut self, x: usize, y: usize) -> Result<(), PlayMoveError>;
+    fn get_tile(&self, x: isize, y: isize) -> Result<&Option<Player>, InvalidPosition>;
+    fn get_gamestate(&self) -> GameState;
+    fn get_width(&self) -> isize;
+    fn get_height(&self) -> isize;
+    fn get_win_length(&self) -> isize;
+}
 
-        let mut board = Vec::with_capacity(height as usize);
-        for _ in 0..height {
-            board.push(vec![None; width as usize]);
-        }
-
-        Ok(Self {
-            board,
-            height,
-            width,
-            win_length,
-            current_turn: Player::A,
-        })
-    }
-
-    pub fn get_current_player(&self) -> Player {
+impl GameTrait for Game {
+    fn get_current_player(&self) -> Player {
         self.current_turn
     }
 
-    pub fn get_board(&self) -> Board {
+    fn get_board(&self) -> Board {
         self.board.clone()
     }
 
-    pub fn play_move(&mut self, x: usize, y: usize) -> Result<(), PlayMoveError> {
+    fn play_move(&mut self, x: usize, y: usize) -> Result<(), PlayMoveError> {
         let tile = self
             .board
             .get(y)
@@ -90,7 +85,7 @@ impl Game {
         Ok(())
     }
 
-    pub fn get_tile(&self, x: isize, y: isize) -> Result<&Option<Player>, InvalidPosition> {
+    fn get_tile(&self, x: isize, y: isize) -> Result<&Option<Player>, InvalidPosition> {
         if x < 0 {
             Err(InvalidPosition::InvalidColumn)
         } else if y < 0 {
@@ -105,7 +100,7 @@ impl Game {
         }
     }
 
-    pub fn get_gamestate(&self) -> GameState {
+    fn get_gamestate(&self) -> GameState {
         let mut is_playable = false;
 
         for row in 0..self.height {
@@ -143,6 +138,47 @@ impl Game {
             GameState::Draw
         }
     }
+
+    fn get_width(&self) -> isize {
+        self.width
+    }
+
+    fn get_height(&self) -> isize {
+        self.height
+    }
+
+    fn get_win_length(&self) -> isize {
+        self.win_length
+    }
+}
+
+impl Game {
+    pub fn new(width: isize, height: isize, win_length: isize) -> Result<Self, NewGameError> {
+        if height < 0 {
+            return Err(NewGameError::InvalidHeight);
+        }
+        if width < 0 {
+            return Err(NewGameError::InvalidWidth);
+        }
+        if win_length > height || win_length > width {
+            return Err(NewGameError::InvalidWinLength);
+        }
+
+        let mut board = Vec::with_capacity(height as usize);
+        for _ in 0..height {
+            board.push(vec![None; width as usize]);
+        }
+
+        Ok(Self {
+            board,
+            height,
+            width,
+            win_length,
+            current_turn: Player::A,
+        })
+    }
+
+
 }
 
 impl Default for Game {
