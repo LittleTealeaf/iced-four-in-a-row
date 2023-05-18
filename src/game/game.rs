@@ -3,7 +3,7 @@ use std::{
     ops::{Add, Mul},
 };
 
-use super::{GameState, GameTrait, Player, Point, Difficulty, computer};
+use super::{computer, Bot, Difficulty, GameState, GameTrait, Player, Point, Strategy};
 
 const DIRECTIONS: [Point; 4] = [
     Point { x: 1, y: 0 },
@@ -23,7 +23,30 @@ pub struct Game {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum PlayerType {
     User,
-    Computer(Difficulty)
+    Computer(Bot),
+}
+
+impl PlayerType {
+    pub fn get_bot(&self) -> Option<&Bot> {
+        match self {
+            Self::User => None,
+            Self::Computer(bot) => Some(bot),
+        }
+    }
+
+    pub fn set_difficulty(self, difficulty: Difficulty) -> Self {
+        match self {
+            Self::User => self,
+            Self::Computer(Bot(_, strategy)) => Self::Computer(Bot(difficulty, strategy)),
+        }
+    }
+
+    pub fn set_strategy(self, strategy: Strategy) -> Self {
+        match self {
+            Self::User => self,
+            Self::Computer(Bot(difficulty, _)) => Self::Computer(Bot(difficulty, strategy)),
+        }
+    }
 }
 
 impl Game {

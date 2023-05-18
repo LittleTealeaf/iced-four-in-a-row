@@ -1,11 +1,11 @@
 use iced::{
     theme,
-    widget::{button, column, container, radio, row, text, text_input, Space},
-    Element, Length, Renderer, Theme,
+    widget::{button, column, container, pick_list, radio, row, text, text_input, Space},
+    Element, Length, Renderer, Settings, Theme,
 };
 
 use crate::{
-    game::{Game, PlayerType, Difficulty},
+    game::{Bot, Difficulty, Game, PlayerType, Strategy},
     Message,
 };
 
@@ -42,10 +42,7 @@ impl Default for GameSettings {
             width: 6,
             height: 6,
             goal: 4,
-            players: vec![
-                PlayerType::User,
-                PlayerType::Computer(crate::game::Difficulty::Normal),
-            ],
+            players: vec![PlayerType::User, PlayerType::Computer(Bot::default())],
         }
     }
 }
@@ -130,17 +127,28 @@ impl GameSettings {
                     let set_player_type = |value| SettingsMessage::SetPlayerType(i, value).into();
                     row(vec![
                         radio("User", PlayerType::User, Some(*player), set_player_type).into(),
-                        row(
-                            Difficulty::all().into_iter().map(|difficulty| {
-                                radio(
-                                    difficulty.to_string(),
-                                    PlayerType::Computer(difficulty),
-                                    Some(*player),
-                                    set_player_type,
-                                )
-                                .into()
-                            }).collect()
-                        ).into(),
+                        radio(
+                            "Computer",
+                            PlayerType::Computer(Bot::default()),
+                            Some(match player {
+                                PlayerType::User => *player,
+                                PlayerType::Computer(_) => PlayerType::Computer(Bot::default()),
+                            }),
+                            set_player_type,
+                        )
+                        .into(),
+                        pick_list(
+                            &Difficulty::ALL[..],
+                            player.get_bot().and_then(|bot| Some(bot.get_difficulty())),
+                            move |value| SettingsMessage::SetPlayerType(i, player.set_difficulty(value)).into(),
+                        )
+                        .into(),
+                        pick_list(
+                            &Strategy::ALL[..],
+                            player.get_bot().and_then(|bot| Some(bot.get_strategy())),
+                            move |value| SettingsMessage::SetPlayerType(i, player.set_strategy(value)).into(),
+                        )
+                        .into(),
                         Space::new(10, 0).into(),
                         button("Delete")
                             .on_press(SettingsMessage::RemovePlayer(i).into())
@@ -156,7 +164,7 @@ impl GameSettings {
 
         let add_player = {
             let button = button(text("Add Player").size(25)).style(theme::Button::Text);
-            if self.players.len() < 10 {
+            if self.players.len() < 13 {
                 button.on_press(SettingsMessage::AddPlayer.into())
             } else {
                 button
